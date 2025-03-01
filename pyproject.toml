@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=42", "wheel"]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,7 +13,7 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["environment"]
+packages = ["RL_map_exploration", "RL_map_exploration.rl_environment"]
 
 [tool.black]
 line-length = 100

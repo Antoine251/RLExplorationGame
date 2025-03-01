@@ -1,7 +1,7 @@
 import numpy as np
 import pygame
 
-from environment.constants import (
+from RL_map_exploration.rl_environment.constants import (
     FIELD_OF_VIEW,
     FISH_DIAMETER,
     MAP_SIZE,
@@ -9,12 +9,13 @@ from environment.constants import (
     TILE_NUMBER,
     TILE_SIZE,
 )
-from environment.ray import Ray
+from RL_map_exploration.rl_environment.ray import Ray
 
 
 class Fish:
     def __init__(self, map, window) -> None:
         self.window = window
+        self.done = False
         possible_tiles = []
         for row in range(1, TILE_NUMBER - 1):
             for column in range(1, TILE_NUMBER - 1):
@@ -42,13 +43,17 @@ class Fish:
 
         self.vision = np.zeros((NUMBER_OF_RAYS, 3))
 
-    def draw(self) -> None:
+    def draw(self, fainted: bool = False) -> None:
         # try:
         player_position_on_window = [int(self.position[0]), int(MAP_SIZE - self.position[1])]
         # except:
         #     self.postion = [TILE_SIZE, TILE_SIZE]
         #     player_position_on_window = [int(self.position[0]), int(MAP_SIZE - self.position[1])]
-        pygame.draw.circle(self.window, (255, 0, 0), player_position_on_window, FISH_DIAMETER)
+        if fainted:
+            color = (255, 100, 100)
+        else:
+            color = (255, 0, 0)
+        pygame.draw.circle(self.window, color, player_position_on_window, FISH_DIAMETER)
 
     def cast_rays(self, map) -> None:
         ray_angles = np.linspace(

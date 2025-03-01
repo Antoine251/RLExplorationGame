@@ -14,7 +14,7 @@ num_episodes = 1000
 epsilon = 1  # Start with full exploration
 epsilon_min = 0.1  # Minimum exploration
 epsilon_decay = 0.996  # Decay rate
-gamma = 0.99  # Discount factor
+gamma = 0.99
 batch_size = 64
 replay_buffer = deque(maxlen=15000)  # Experience buffer
 action_threshold = 0

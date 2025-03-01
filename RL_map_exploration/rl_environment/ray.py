@@ -1,7 +1,11 @@
 import numpy as np
 import pygame
 
-from environment.constants import MAP_SIZE, SCALE_FACTOR_3D, TILE_SIZE
+from RL_map_exploration.rl_environment.constants import (
+    MAP_SIZE,
+    SCALE_FACTOR_3D,
+    TILE_SIZE,
+)
 
 
 class Ray:

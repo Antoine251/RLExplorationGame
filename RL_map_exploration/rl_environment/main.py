@@ -1,9 +1,9 @@
 import numpy as np
 import pygame
 
-from environment.constants import MAP_SIZE
-from environment.fish import Fish
-from environment.map import TiledMap
+from RL_map_exploration.rl_environment.constants import MAP_SIZE
+from RL_map_exploration.rl_environment.fish import Fish
+from RL_map_exploration.rl_environment.map import TiledMap
 
 pygame.init()
 window = pygame.display.set_mode((MAP_SIZE * 2, MAP_SIZE))

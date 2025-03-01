@@ -1,7 +1,7 @@
 import numpy as np
 import pygame
 
-from environment.constants import TILE_NUMBER, TILE_SIZE, MAP_SIZE
+from RL_map_exploration.rl_environment.constants import MAP_SIZE, TILE_NUMBER, TILE_SIZE
 
 
 class TiledMap:

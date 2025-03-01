@@ -1,10 +1,11 @@
 from typing import Union
 
-from environment.fish import Fish
-from environment.map import TiledMap
-import pygame
-from environment.constants import MAP_SIZE
 import numpy as np
+import pygame
+
+from RL_map_exploration.rl_environment.constants import MAP_SIZE, NBR_OF_FISHES
+from RL_map_exploration.rl_environment.fish import Fish
+from RL_map_exploration.rl_environment.map import TiledMap
 
 
 class Environment:
@@ -13,36 +14,37 @@ class Environment:
         pygame.font.init()
         self.window = pygame.display.set_mode((MAP_SIZE * 2, MAP_SIZE))
 
-        pygame.display.set_caption("Brain project")
+        pygame.display.set_caption("RL exploration game")
         self.reward_font = pygame.font.Font(None, 25)
         self.mean_reward_font = pygame.font.Font(None, 25)
 
         self.clock = pygame.time.Clock()
 
         self.map = TiledMap(self.window)
-        self.fish = Fish(self.map.get_map(), self.window)
-        self.fish2 = Fish(self.map.get_map(), self.window)
+        self.fish = [Fish(self.map.get_map(), self.window) for _ in range(NBR_OF_FISHES)]
         self.counter = 0
         self.cumulative_reward = 0
 
     def reset(self):
         self.map = TiledMap(self.window)
-        self.fish = Fish(self.map.get_map(), self.window)
-        self.fish2 = Fish(self.map.get_map(), self.window)
+        self.fish = [Fish(self.map.get_map(), self.window) for _ in range(NBR_OF_FISHES)]
         self.clock.tick(0)
         self.counter = 0
         self.cumulative_reward = 0
 
         self.map.draw()
-        self.fish.draw()
-        self.fish.cast_rays(self.map.map)
+        for i, new_fish in enumerate(self.fish):
+            new_fish.draw(fainted=True if i > 0 else False)
+            new_fish.cast_rays(self.map.map)
 
-        return self.fish.vision / 255
+        return [new_fish.vision / 255 for new_fish in self.fish]
 
     def step(
-        self, action: Union[pygame.key.ScancodeWrapper, list], last_rewards: list = 0  # type:ignore
+        self,
+        action: Union[list[pygame.key.ScancodeWrapper], list[list]],  # type:ignore
+        last_rewards: list = [0],
     ):
-        reward = 0
+        reward = [0] * len(action)
         for _ in range(6):
             self.counter += 1
             pygame.draw.rect(
@@ -57,7 +59,7 @@ class Environment:
             )
 
             # handle user input
-            if isinstance(action, list):
+            if isinstance(action[0], list):
                 left_index = 0
                 right_index = 2
                 up_index = 1
@@ -66,16 +68,18 @@ class Environment:
                 right_index = pygame.K_RIGHT
                 up_index = pygame.K_UP
 
-            if action[left_index]:
-                self.fish.orientation += 0.1
-            if action[right_index]:
-                self.fish.orientation -= 0.1
-            if action[up_index]:
-                reward += 0.2
-                self.fish.position[0] += np.cos(self.fish.orientation) * 3
-                self.fish.position[1] += np.sin(self.fish.orientation) * 3
-                if self.fish.is_collision(self.map.get_map()):
-                    return self.fish.vision / 255, -10, True
+            for i, act in enumerate(action):
+                if act[left_index]:
+                    self.fish[i].orientation += 0.1
+                if act[right_index]:
+                    self.fish[i].orientation -= 0.1
+                if act[up_index]:
+                    reward[i] += 0.2  # type: ignore
+                    self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
+                    self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
+                    if self.fish[i].is_collision(self.map.get_map()):
+                        reward[i] = -10
+                        self.fish[i].done = True
 
             # if action[pygame.K_DOWN]:
             #     self.fish.position[0] -= np.cos(self.fish.orientation)*3
@@ -85,10 +89,10 @@ class Environment:
 
             # update map and pseudo-3D rendering
             self.map.draw()
-            self.fish.draw()
-            self.fish2.draw()
-            self.fish.cast_rays(self.map.map)
-            reward += self.map.compute_reward(list(self.fish.position))
+            for i, new_fish in enumerate(self.fish):
+                new_fish.draw(fainted=True if i > 0 else False)
+                new_fish.cast_rays(self.map.map)
+                reward[i] += self.map.compute_reward(list(new_fish.position))
 
             text_to_print = self.reward_font.render(
                 "Cumulative reward: " + str(round(self.cumulative_reward, 2)),
@@ -112,20 +116,33 @@ class Environment:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    return self.fish.vision / 255, -1, True
+                    for new_fish in self.fish:
+                        new_fish.done = True
+                    return [
+                        (new_fish.vision / 255, -1, new_fish.done)
+                        for i, new_fish in enumerate(self.fish)
+                    ]
 
             if self.counter > 500:
                 # reward += 10
-                return self.fish.vision / 255, reward, True
+                for new_fish in self.fish:
+                    new_fish.done = True
+                return [
+                    (new_fish.vision / 255, reward[i], new_fish.done)
+                    for i, new_fish in enumerate(self.fish)
+                ]
 
-        self.cumulative_reward += reward
-        return self.fish.vision / 255, reward, False
+        self.cumulative_reward += reward[0]
+        return [
+            (new_fish.vision / 255, reward[i], new_fish.done)
+            for i, new_fish in enumerate(self.fish)
+        ]
 
     def run(self):
         done = False
         while not done:
-            action = pygame.key.get_pressed()
-            vision, reward, done = self.step(action)
+            action = [pygame.key.get_pressed() for _ in range(NBR_OF_FISHES)]
+            _ = self.step(action)
 
 
 if __name__ == "__main__":
