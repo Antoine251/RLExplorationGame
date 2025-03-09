@@ -13,9 +13,10 @@ from RL_map_exploration.rl_environment.ray import Ray
 
 
 class Fish:
-    def __init__(self, map, window) -> None:
+    def __init__(self, map, window, main_fish) -> None:
         self.window = window
         self.done = False
+        self.main_fish = main_fish
         possible_tiles = []
         for row in range(1, TILE_NUMBER - 1):
             for column in range(1, TILE_NUMBER - 1):
@@ -39,20 +40,17 @@ class Fish:
         except:
             self.position = [TILE_SIZE, TILE_SIZE]
 
-        self.orientation = np.random.uniform(0, np.pi)
+        self.orientation = np.random.uniform(0, 2 * np.pi)
 
         self.vision = np.zeros((NUMBER_OF_RAYS, 3))
 
-    def draw(self, fainted: bool = False) -> None:
-        # try:
+    def draw(self) -> None:
         player_position_on_window = [int(self.position[0]), int(MAP_SIZE - self.position[1])]
-        # except:
-        #     self.postion = [TILE_SIZE, TILE_SIZE]
-        #     player_position_on_window = [int(self.position[0]), int(MAP_SIZE - self.position[1])]
-        if fainted:
-            color = (255, 100, 100)
-        else:
+
+        if self.main_fish:
             color = (255, 0, 0)
+        else:
+            color = (255, 200, 200)
         pygame.draw.circle(self.window, color, player_position_on_window, FISH_DIAMETER)
 
     def cast_rays(self, map) -> None:
@@ -64,11 +62,11 @@ class Fish:
 
         for index, angle in enumerate(ray_angles):
             ray = Ray(self.position, angle, self.orientation, map, index, self.window)
-            end_point, color = ray.cast_ray()
+            end_point, color = ray.cast_ray(True if self.main_fish else False)
             self.vision[index, :] = np.array(color)
 
             # show field of view
-            if index == 0 or index == NUMBER_OF_RAYS - 1:
+            if (index == 0 or index == NUMBER_OF_RAYS - 1) and not self.done:
                 player_position_on_window = [
                     int(self.position[0]),
                     int(MAP_SIZE - self.position[1]),

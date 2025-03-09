@@ -69,6 +69,10 @@ class Ray:
                 depth = ray_length_1D[1]
                 ray_length_1D[1] += unit_step_size[1]
 
+            if tile_position[0] == 12:
+                tile_position[0] = 11
+            if tile_position[1] == 12:
+                tile_position[1] = 11
             if self.map[tile_position[0], tile_position[1]] != 0:
                 tile_found = True
 
@@ -83,12 +87,13 @@ class Ray:
             else:
                 self.hit_food = False
 
-    def cast_ray(self) -> tuple[np.ndarray, tuple]:  # [2,], (3,)
+    def cast_ray(self, draw: bool) -> tuple[np.ndarray, tuple]:  # [2,], (3,)
         self.find_wall()
-        color = self.show_3D_map()
+        color = self.show_3D_map(draw)
+
         return self.end_point, color
 
-    def show_3D_map(self) -> tuple:
+    def show_3D_map(self, draw: bool) -> tuple:
         depth = np.sqrt(
             (self.init_point[0] - self.end_point[0]) ** 2
             + (self.init_point[1] - self.end_point[1]) ** 2
@@ -101,18 +106,19 @@ class Ray:
             color = (0, depth_color, depth_color)
 
         # remove fish eye effect
-        depth *= np.cos(self.player_angle - self.angle)
+        if draw:
+            depth *= np.cos(self.player_angle - self.angle)
 
-        wall_height = 21000 / (depth + 0.0001)
-        pygame.draw.rect(
-            self.window,
-            color,
-            (
-                (2 * MAP_SIZE) - (self.index + 1) * SCALE_FACTOR_3D,
-                (MAP_SIZE / 2) - wall_height / 2,
-                SCALE_FACTOR_3D + 1,
-                wall_height,
-            ),  # type: ignore
-        )
+            wall_height = 21000 / (depth + 0.0001)
+            pygame.draw.rect(
+                self.window,
+                color,
+                (
+                    (2 * MAP_SIZE) - (self.index + 1) * SCALE_FACTOR_3D,
+                    (MAP_SIZE / 2) - wall_height / 2,
+                    SCALE_FACTOR_3D + 1,
+                    wall_height,
+                ),  # type: ignore
+            )
 
         return color

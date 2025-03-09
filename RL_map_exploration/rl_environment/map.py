@@ -4,9 +4,8 @@ import pygame
 from RL_map_exploration.rl_environment.constants import MAP_SIZE, TILE_NUMBER, TILE_SIZE
 
 
-class TiledMap:
-    def __init__(self, window) -> None:
-        self.window = window
+class TiledMapTopology:
+    def __init__(self) -> None:
         self.map = np.zeros((TILE_NUMBER, TILE_NUMBER))
         self.map[:, 0] = 1
         self.map[:, TILE_NUMBER - 1] = 1
@@ -59,6 +58,16 @@ class TiledMap:
                 if self.map[row, column] == 0:
                     self.map[row, column] = np.random.choice([0, 2], p=[0.8, 0.2])
 
+    def get_topology(self) -> np.ndarray:
+        return self.map
+
+
+class TiledMap:
+    def __init__(self, window, map_topology: np.ndarray) -> None:
+        self.window = window
+        self.map = map_topology
+        self.initial_map = map_topology.copy()
+
     def get_map(self) -> np.ndarray:
         return self.map
 
@@ -75,6 +84,17 @@ class TiledMap:
                     self.window, color, (column * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
                 )
 
+        for row in range(TILE_NUMBER):
+            for column in range(TILE_NUMBER):
+                if self.initial_map[row, column] == 2:
+                    color = (255, 0, 0)
+                    pygame.draw.rect(
+                        self.window,
+                        color,
+                        (column * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE),
+                        width=1,
+                    )
+
     def compute_reward(self, palyer_position: list) -> int:
         tile_position = np.array(
             [
@@ -82,8 +102,9 @@ class TiledMap:
                 int(palyer_position[0] // TILE_SIZE),
             ]
         )
+
         if self.map[tile_position[0], tile_position[1]] == 2:
             self.map[tile_position[0], tile_position[1]] = 0
-            return 0
+            return 5
         else:
             return 0

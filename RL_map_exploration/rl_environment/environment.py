@@ -5,7 +5,7 @@ import pygame
 
 from RL_map_exploration.rl_environment.constants import MAP_SIZE, NBR_OF_FISHES
 from RL_map_exploration.rl_environment.fish import Fish
-from RL_map_exploration.rl_environment.map import TiledMap
+from RL_map_exploration.rl_environment.map import TiledMap, TiledMapTopology
 
 
 class Environment:
@@ -20,42 +20,54 @@ class Environment:
 
         self.clock = pygame.time.Clock()
 
-        self.map = TiledMap(self.window)
-        self.fish = [Fish(self.map.get_map(), self.window) for _ in range(NBR_OF_FISHES)]
+        map_topology = TiledMapTopology()
+        self.map = [
+            TiledMap(self.window, map_topology.get_topology().copy()) for i in range(NBR_OF_FISHES)
+        ]
+        self.fish = [
+            Fish(self.map[i].get_map(), self.window, True if i == 0 else False)
+            for i in range(NBR_OF_FISHES)
+        ]
         self.counter = 0
         self.cumulative_reward = 0
 
     def reset(self):
-        self.map = TiledMap(self.window)
-        self.fish = [Fish(self.map.get_map(), self.window) for _ in range(NBR_OF_FISHES)]
+        map_topology = TiledMapTopology()
+        self.map = [
+            TiledMap(self.window, map_topology.get_topology().copy()) for i in range(NBR_OF_FISHES)
+        ]
+        self.fish = [
+            Fish(self.map[i].get_map(), self.window, True if i == 0 else False)
+            for i in range(NBR_OF_FISHES)
+        ]
         self.clock.tick(0)
         self.counter = 0
         self.cumulative_reward = 0
 
-        self.map.draw()
+        self.map[0].draw()
         for i, new_fish in enumerate(self.fish):
-            new_fish.draw(fainted=True if i > 0 else False)
-            new_fish.cast_rays(self.map.map)
+            new_fish.draw()
+            new_fish.cast_rays(self.map[i].map)
 
         return [new_fish.vision / 255 for new_fish in self.fish]
 
     def step(
         self,
-        action: Union[list[pygame.key.ScancodeWrapper], list[list]],  # type:ignore
+        action: Union[list[pygame.key.ScancodeWrapper], list[list]],  # type: ignore
         last_rewards: list = [0],
     ):
         reward = [0] * len(action)
-        for _ in range(6):
+        for _ in range(3):
             self.counter += 1
             pygame.draw.rect(
                 self.window,
                 (100, 100, 100),
-                (MAP_SIZE, MAP_SIZE / 2, MAP_SIZE, MAP_SIZE),  # type:ignore
+                (MAP_SIZE, MAP_SIZE / 2, MAP_SIZE, MAP_SIZE),  # type: ignore
             )
             pygame.draw.rect(
                 self.window,
                 (150, 150, 150),
-                (MAP_SIZE, -MAP_SIZE / 2, MAP_SIZE, MAP_SIZE),  # type:ignore
+                (MAP_SIZE, -MAP_SIZE / 2, MAP_SIZE, MAP_SIZE),  # type: ignore
             )
 
             # handle user input
@@ -69,30 +81,27 @@ class Environment:
                 up_index = pygame.K_UP
 
             for i, act in enumerate(action):
+                if self.fish[i].done:
+                    continue
+
                 if act[left_index]:
                     self.fish[i].orientation += 0.1
                 if act[right_index]:
                     self.fish[i].orientation -= 0.1
                 if act[up_index]:
-                    reward[i] += 0.2  # type: ignore
+                    reward[i] += 0.0  # type: ignore
                     self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                     self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
-                    if self.fish[i].is_collision(self.map.get_map()):
-                        reward[i] = -10
+                    if self.fish[i].is_collision(self.map[i].get_map()):
+                        reward[i] = 0
                         self.fish[i].done = True
 
-            # if action[pygame.K_DOWN]:
-            #     self.fish.position[0] -= np.cos(self.fish.orientation)*3
-            #     self.fish.position[1] -= np.sin(self.fish.orientation)*3
-            #     if self.fish.is_collision(self.map.get_map()):
-            #         return self.fish.vision, -1, True
-
             # update map and pseudo-3D rendering
-            self.map.draw()
+            self.map[0].draw()
             for i, new_fish in enumerate(self.fish):
-                new_fish.draw(fainted=True if i > 0 else False)
-                new_fish.cast_rays(self.map.map)
-                reward[i] += self.map.compute_reward(list(new_fish.position))
+                new_fish.draw()
+                new_fish.cast_rays(self.map[i].map)
+                reward[i] += self.map[i].compute_reward(list(new_fish.position))
 
             text_to_print = self.reward_font.render(
                 "Cumulative reward: " + str(round(self.cumulative_reward, 2)),
@@ -127,6 +136,7 @@ class Environment:
                 # reward += 10
                 for new_fish in self.fish:
                     new_fish.done = True
+                print("Max step reached")
                 return [
                     (new_fish.vision / 255, reward[i], new_fish.done)
                     for i, new_fish in enumerate(self.fish)
