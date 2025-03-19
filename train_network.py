@@ -12,9 +12,9 @@ from RL_map_exploration.rl_environment.environment import Environment
 
 # Hyperparameters
 num_episodes = 1000
-epsilon = 0.05  # Start with full exploration
+epsilon = 0.0  # Start with full exploration
 epsilon_min = 0.01  # Minimum exploration
-epsilon_decay = 0.996  # Decay rate
+epsilon_decay = 0.992  # Decay rate
 gamma = 0.99
 batch_size = 64
 replay_buffer = deque(maxlen=15000)  # Experience buffer
@@ -27,7 +27,8 @@ input_size = NUMBER_OF_RAYS * 3
 output_size = 3  # Actions: turn left, forward, turn right
 model = DQN(input_size, output_size)
 target_network = DQN(input_size, output_size)
-initial_model = "./models/trained_model_v1.pth"
+# initial_model = "./models/trained_model_v1.pth"
+initial_model = "./models/last_model.pth"
 if initial_model is not None:
     model.load_state_dict(torch.load(initial_model))
     target_network.load_state_dict(torch.load(initial_model))
@@ -78,35 +79,35 @@ for episode in range(num_episodes):
                 replay_buffer.append((state[i], action[i], reward[i], next_state[i], done[i]))
 
         # Sample and train
-        # if len(replay_buffer) > batch_size:
-        #     batch = random.sample(replay_buffer, batch_size)
+        if len(replay_buffer) > batch_size:
+            batch = random.sample(replay_buffer, batch_size)
 
-        #     # Prepare batch data
-        #     states, actions, rewards, next_states, dones = zip(*batch)
-        #     states = np.array(states)
-        #     next_states = np.array(next_states)
-        #     states = torch.FloatTensor(states).reshape([batch_size, NUMBER_OF_RAYS * 3])
-        #     actions = torch.FloatTensor(actions)
-        #     rewards = torch.FloatTensor(rewards)
-        #     next_states = torch.FloatTensor(next_states).reshape([batch_size, NUMBER_OF_RAYS * 3])
-        #     dones = torch.FloatTensor(dones)
+            # Prepare batch data
+            states, actions, rewards, next_states, dones = zip(*batch)
+            states = np.array(states)
+            next_states = np.array(next_states)
+            states = torch.FloatTensor(states).reshape([batch_size, NUMBER_OF_RAYS * 3])
+            actions = torch.FloatTensor(actions)
+            rewards = torch.FloatTensor(rewards)
+            next_states = torch.FloatTensor(next_states).reshape([batch_size, NUMBER_OF_RAYS * 3])
+            dones = torch.FloatTensor(dones)
 
-        #     # Compute Q-values and select the one linked to the performed action
-        #     q_values = model(states)
-        #     q_values = (q_values * actions).sum(dim=1, keepdim=True).squeeze()
+            # Compute Q-values and select the one linked to the performed action
+            q_values = model(states)
+            q_values = (q_values * actions).sum(dim=1, keepdim=True).squeeze()
 
-        #     with torch.no_grad():
-        #         next_q_values = target_network(next_states)
+            with torch.no_grad():
+                next_q_values = target_network(next_states)
 
-        #     next_q_values = next_q_values.max(1).values
+            next_q_values = next_q_values.max(1).values
 
-        #     targets = rewards + gamma * next_q_values
+            targets = rewards + gamma * next_q_values
 
-        #     # Update the model
-        #     loss = criterion(q_values, targets)
-        #     optimizer.zero_grad()
-        #     loss.backward()
-        #     optimizer.step()
+            # Update the model
+            loss = criterion(q_values, targets)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
 
         # Update state
         state = next_state

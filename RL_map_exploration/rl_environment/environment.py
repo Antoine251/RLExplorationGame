@@ -1,3 +1,4 @@
+import random
 from typing import Union
 
 import numpy as np
@@ -85,16 +86,21 @@ class Environment:
                     continue
 
                 if act[left_index]:
-                    self.fish[i].orientation += 0.1
+                    self.fish[i].orientation += random.uniform(0.08, 0.12)
                 if act[right_index]:
-                    self.fish[i].orientation -= 0.1
+                    self.fish[i].orientation -= random.uniform(0.08, 0.12)
                 if act[up_index]:
                     reward[i] += 0.0  # type: ignore
                     self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                     self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
                     if self.fish[i].is_collision(self.map[i].get_map()):
-                        reward[i] = 0
-                        self.fish[i].done = True
+                        self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
+                        self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
+                        if self.fish[i].is_collision(self.map[i].get_map()):
+                            self.fish[i].position[0] -= 2 * np.cos(self.fish[i].orientation) * 3
+                            self.fish[i].position[1] -= 2 * np.sin(self.fish[i].orientation) * 3
+                    # reward[i] = 0
+                    # self.fish[i].done = True
 
             # update map and pseudo-3D rendering
             self.map[0].draw()
