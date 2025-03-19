@@ -48,12 +48,12 @@ class Fish:
         player_position_on_window = [int(self.position[0]), int(MAP_SIZE - self.position[1])]
 
         if self.main_fish:
-            color = (255, 0, 0)
+            color = (50, 200, 50)
         else:
-            color = (255, 200, 200)
+            color = (150, 255, 150)
         pygame.draw.circle(self.window, color, player_position_on_window, FISH_DIAMETER)
 
-    def cast_rays(self, map) -> None:
+    def cast_rays(self, map: np.ndarray, food_list: list) -> None:
         ray_angles = np.linspace(
             self.orientation - FIELD_OF_VIEW / 2,
             self.orientation + FIELD_OF_VIEW / 2,
@@ -61,12 +61,13 @@ class Fish:
         )
 
         for index, angle in enumerate(ray_angles):
-            ray = Ray(self.position, angle, self.orientation, map, index, self.window)
+            ray = Ray(self.position, angle, self.orientation, map, food_list, index, self.window)
             end_point, color = ray.cast_ray(True if self.main_fish else False)
             self.vision[index, :] = np.array(color)
 
             # show field of view
             if (index == 0 or index == NUMBER_OF_RAYS - 1) and not self.done:
+                # if not self.done:
                 player_position_on_window = [
                     int(self.position[0]),
                     int(MAP_SIZE - self.position[1]),

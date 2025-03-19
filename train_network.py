@@ -13,8 +13,8 @@ from RL_map_exploration.rl_environment.environment import Environment
 # Hyperparameters
 num_episodes = 1000
 epsilon = 0.0  # Start with full exploration
-epsilon_min = 0.01  # Minimum exploration
-epsilon_decay = 0.992  # Decay rate
+epsilon_min = 0.05  # Minimum exploration
+epsilon_decay = 0.996  # Decay rate
 gamma = 0.99
 batch_size = 64
 replay_buffer = deque(maxlen=15000)  # Experience buffer
@@ -29,6 +29,7 @@ model = DQN(input_size, output_size)
 target_network = DQN(input_size, output_size)
 # initial_model = "./models/trained_model_v1.pth"
 initial_model = "./models/last_model.pth"
+# initial_model = None
 if initial_model is not None:
     model.load_state_dict(torch.load(initial_model))
     target_network.load_state_dict(torch.load(initial_model))

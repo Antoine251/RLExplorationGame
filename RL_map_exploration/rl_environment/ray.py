@@ -2,6 +2,7 @@ import numpy as np
 import pygame
 
 from RL_map_exploration.rl_environment.constants import (
+    FOOD_DIAMETER,
     MAP_SIZE,
     SCALE_FACTOR_3D,
     TILE_SIZE,
@@ -9,7 +10,7 @@ from RL_map_exploration.rl_environment.constants import (
 
 
 class Ray:
-    def __init__(self, init_point, angle, player_angle, map, index, window) -> None:
+    def __init__(self, init_point, angle, player_angle, map, food_list, index, window) -> None:
         self.window = window
         self.index = index
         self.init_point = init_point
@@ -17,6 +18,7 @@ class Ray:
         self.angle = angle
         self.player_angle = player_angle
         self.map = map
+        self.food_list = food_list
         self.hit_food = False
 
     def find_wall(self) -> None:
@@ -59,6 +61,32 @@ class Ray:
             ray_length_1D[1] = (player_position_on_tile[0] - tile_position[0]) * unit_step_size[1]
 
         tile_found = False
+        if self.map[tile_position[0], tile_position[1]] == 2:
+            ray_length_1D_save = ray_length_1D.copy()
+            tile_position_save = tile_position.copy()
+            if ray_length_1D[0] < ray_length_1D[1]:
+                tile_position[1] += step[1]
+                depth = ray_length_1D[0]
+                ray_length_1D[0] += unit_step_size[0]
+            else:
+                tile_position[0] += step[0]
+                depth = ray_length_1D[1]
+                ray_length_1D[1] += unit_step_size[1]
+            player_point = [self.init_point[0], MAP_SIZE - self.init_point[1]]
+            distance = direction * depth
+            end_point_on_tile = player_position_on_tile + np.array([-distance[1], distance[0]])
+            next_tile_end_point = np.array(
+                [end_point_on_tile[1] * TILE_SIZE, end_point_on_tile[0] * TILE_SIZE]
+            )
+            # pygame.draw.circle(self.window, (255, 255, 0), player_point, 3)
+            # pygame.draw.circle(self.window, (255, 255, 0), next_tile_end_point, 3)
+            tile_found = self.investigate_tile_for_food(np.array(player_point), next_tile_end_point)
+            if tile_found is True:
+                self.hit_food = True
+
+            ray_length_1D = ray_length_1D_save
+            tile_position = tile_position_save
+
         while tile_found == False and depth < MAP_SIZE * np.sqrt(2):
             if ray_length_1D[0] < ray_length_1D[1]:
                 tile_position[1] += step[1]
@@ -73,19 +101,80 @@ class Ray:
                 tile_position[0] = 11
             if tile_position[1] == 12:
                 tile_position[1] = 11
-            if self.map[tile_position[0], tile_position[1]] != 0:
+            if self.map[tile_position[0], tile_position[1]] == 1:
                 tile_found = True
+                self.hit_food = False
+            if self.map[tile_position[0], tile_position[1]] == 2:
+                distance = direction * depth
+                end_point_on_tile = player_position_on_tile + np.array([-distance[1], distance[0]])
+                end_point = np.array(
+                    [end_point_on_tile[1] * TILE_SIZE, end_point_on_tile[0] * TILE_SIZE]
+                )
 
-        if tile_found:
+                ray_length_1D_save = ray_length_1D.copy()
+                tile_position_save = tile_position.copy()
+
+                if ray_length_1D[0] < ray_length_1D[1]:
+                    tile_position[1] += step[1]
+                    depth = ray_length_1D[0]
+                    ray_length_1D[0] += unit_step_size[0]
+                else:
+                    tile_position[0] += step[0]
+                    depth = ray_length_1D[1]
+                    ray_length_1D[1] += unit_step_size[1]
+
+                distance = direction * depth
+                end_point_on_tile = player_position_on_tile + np.array([-distance[1], distance[0]])
+                next_tile_end_point = np.array(
+                    [end_point_on_tile[1] * TILE_SIZE, end_point_on_tile[0] * TILE_SIZE]
+                )
+
+                # pygame.draw.circle(self.window, (255, 255, 0), end_point, 3)
+                # pygame.draw.circle(self.window, (255, 255, 0), next_tile_end_point, 3)
+                tile_found = self.investigate_tile_for_food(end_point, next_tile_end_point)
+                if tile_found is True:
+                    self.hit_food = True
+
+                ray_length_1D = ray_length_1D_save
+                tile_position = tile_position_save
+
+        if tile_found and self.hit_food is False:
             distance = direction * depth
             end_point_on_tile = player_position_on_tile + np.array([-distance[1], distance[0]])
             self.end_point = np.array(
                 [end_point_on_tile[1] * TILE_SIZE, MAP_SIZE - end_point_on_tile[0] * TILE_SIZE]
             )
-            if self.map[tile_position[0], tile_position[1]] == 2:
-                self.hit_food = True
-            else:
-                self.hit_food = False
+
+    def investigate_tile_for_food(
+        self, start_point: np.ndarray, end_point: np.ndarray, step_size: float = 2
+    ) -> bool:
+        """Check if there is food on the tile. If yes, find the collision point."""
+        direction_forward = (end_point - start_point) / np.linalg.norm(end_point - start_point)
+
+        # Initialize moving points
+        forward_point = start_point.copy()
+        backward_point = end_point.copy()
+
+        mid_point = (forward_point + backward_point) / 2
+        food = None
+        for food_center in self.food_list:
+            food_position = np.array(food_center)
+            food_tile = food_position // TILE_SIZE
+            if np.all(mid_point // TILE_SIZE == food_tile):
+                food = food_center
+
+        if food is None:
+            return False
+
+        while np.linalg.norm(forward_point - backward_point) > step_size:
+            # Move forward point
+            forward_point += direction_forward * step_size
+            if np.linalg.norm(forward_point - food) < FOOD_DIAMETER / 2:
+                end_point_on_tile = forward_point
+                self.end_point = np.array([end_point_on_tile[0], MAP_SIZE - end_point_on_tile[1]])
+                return True
+
+        return False
 
     def cast_ray(self, draw: bool) -> tuple[np.ndarray, tuple]:  # [2,], (3,)
         self.find_wall()

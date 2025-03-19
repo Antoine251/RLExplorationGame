@@ -22,9 +22,12 @@ class Environment:
         self.clock = pygame.time.Clock()
 
         map_topology = TiledMapTopology()
-        self.map = [
-            TiledMap(self.window, map_topology.get_topology().copy()) for i in range(NBR_OF_FISHES)
-        ]
+        for i in range(NBR_OF_FISHES):
+            map_design, food_list = map_topology.get_topology()
+            self.map = [
+                TiledMap(self.window, map_design.copy(), food_list.copy())
+                for i in range(NBR_OF_FISHES)
+            ]
         self.fish = [
             Fish(self.map[i].get_map(), self.window, True if i == 0 else False)
             for i in range(NBR_OF_FISHES)
@@ -34,9 +37,13 @@ class Environment:
 
     def reset(self):
         map_topology = TiledMapTopology()
-        self.map = [
-            TiledMap(self.window, map_topology.get_topology().copy()) for i in range(NBR_OF_FISHES)
-        ]
+        self.map = []
+        for i in range(NBR_OF_FISHES):
+            map_design, food_list = map_topology.get_topology()
+            self.map = [
+                TiledMap(self.window, map_design.copy(), food_list.copy())
+                for i in range(NBR_OF_FISHES)
+            ]
         self.fish = [
             Fish(self.map[i].get_map(), self.window, True if i == 0 else False)
             for i in range(NBR_OF_FISHES)
@@ -48,7 +55,7 @@ class Environment:
         self.map[0].draw()
         for i, new_fish in enumerate(self.fish):
             new_fish.draw()
-            new_fish.cast_rays(self.map[i].map)
+            new_fish.cast_rays(self.map[i].map, self.map[i].food_list)
 
         return [new_fish.vision / 255 for new_fish in self.fish]
 
@@ -106,7 +113,7 @@ class Environment:
             self.map[0].draw()
             for i, new_fish in enumerate(self.fish):
                 new_fish.draw()
-                new_fish.cast_rays(self.map[i].map)
+                new_fish.cast_rays(self.map[i].map, self.map[i].food_list)
                 reward[i] += self.map[i].compute_reward(list(new_fish.position))
 
             text_to_print = self.reward_font.render(
