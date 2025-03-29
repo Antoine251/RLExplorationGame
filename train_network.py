@@ -12,11 +12,11 @@ from RL_map_exploration.rl_environment.environment import Environment
 
 # Hyperparameters
 num_episodes = 1000
-epsilon = 0.0  # Start with full exploration
+epsilon = 0.2  # Start with full exploration
 epsilon_min = 0.05  # Minimum exploration
 epsilon_decay = 0.996  # Decay rate
 gamma = 0.99
-batch_size = 64
+batch_size = 256
 replay_buffer = deque(maxlen=15000)  # Experience buffer
 # action_threshold = 0
 last_20_rewards = []
@@ -24,10 +24,10 @@ last_20_rewards = []
 # Initialize environment and network
 environment = Environment()
 input_size = NUMBER_OF_RAYS * 3
-output_size = 3  # Actions: turn left, forward, turn right
+output_size = 5  # Actions: turn left, forward, turn right, left+forward, right+forward
 model = DQN(input_size, output_size)
 target_network = DQN(input_size, output_size)
-# initial_model = "./models/trained_model_v1.pth"
+# initial_model = "./models/trained_model_v2.pth"
 initial_model = "./models/last_model.pth"
 # initial_model = None
 if initial_model is not None:
@@ -52,8 +52,8 @@ for episode in range(num_episodes):
         action = []
         if random.random() < epsilon:
             for i in range(NBR_OF_FISHES):
-                act_index = random.randint(0, 2)
-                act = [0, 0, 0]
+                act_index = random.randint(0, 4)
+                act = [0, 0, 0, 0, 0]
                 act[act_index] = 1
                 action.append(act)
         else:
@@ -127,7 +127,7 @@ for episode in range(num_episodes):
     print(f"Episode {episode + 1}: Total Reward: {total_reward}")
     print(f"New epsilon: {epsilon}")
 
-    # if episode % 5 == 0:
-    #     model_path = f"./models/last_model.pth"
-    #     target_network.load_state_dict(model.state_dict())
-    #     torch.save(model.state_dict(), model_path)
+    if episode % 5 == 0:
+        model_path = f"./models/last_model.pth"
+        target_network.load_state_dict(model.state_dict())
+        torch.save(model.state_dict(), model_path)

@@ -64,7 +64,7 @@ class Environment:
         action: Union[list[pygame.key.ScancodeWrapper], list[list]],  # type: ignore
         last_rewards: list = [0],
     ):
-        reward = [0] * len(action)
+        reward = [0.0] * len(action)
         for _ in range(3):
             self.counter += 1
             pygame.draw.rect(
@@ -83,24 +83,29 @@ class Environment:
                 left_index = 0
                 right_index = 2
                 up_index = 1
+                left_forward_index = 3
+                right_forward_index = 4
             else:
                 left_index = pygame.K_LEFT
                 right_index = pygame.K_RIGHT
                 up_index = pygame.K_UP
+                left_forward_index = pygame.K_LEFT
+                right_forward_index = pygame.K_RIGHT
 
             for i, act in enumerate(action):
                 if self.fish[i].done:
                     continue
 
-                if act[left_index]:
+                if act[left_index] or act[left_forward_index]:
                     self.fish[i].orientation += random.uniform(0.08, 0.12)
-                if act[right_index]:
+                if act[right_index] or act[right_forward_index]:
                     self.fish[i].orientation -= random.uniform(0.08, 0.12)
-                if act[up_index]:
+                if act[up_index] or act[left_forward_index] or act[right_forward_index]:
                     reward[i] += 0.0  # type: ignore
                     self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                     self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
                     if self.fish[i].is_collision(self.map[i].get_map()):
+                        reward[i] -= 0.1
                         self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                         self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
                         if self.fish[i].is_collision(self.map[i].get_map()):
@@ -108,6 +113,8 @@ class Environment:
                             self.fish[i].position[1] -= 2 * np.sin(self.fish[i].orientation) * 3
                     # reward[i] = 0
                     # self.fish[i].done = True
+                else:
+                    reward[i] -= 0.01
 
             # update map and pseudo-3D rendering
             self.map[0].draw()
