@@ -87,7 +87,7 @@ class Ray:
             ray_length_1D = ray_length_1D_save
             tile_position = tile_position_save
 
-        while tile_found == False and depth < MAP_SIZE * np.sqrt(2):
+        while tile_found is False and depth < MAP_SIZE * np.sqrt(2):
             if ray_length_1D[0] < ray_length_1D[1]:
                 tile_position[1] += step[1]
                 depth = ray_length_1D[0]

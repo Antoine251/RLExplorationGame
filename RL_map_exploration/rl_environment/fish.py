@@ -37,7 +37,7 @@ class Fish:
             self.position += int(TILE_SIZE / 2)
             # change axis convention to classic one
             self.position = [self.position[1], MAP_SIZE - self.position[0]]
-        except:
+        except:  # noqa: E722
             self.position = [TILE_SIZE, TILE_SIZE]
 
         self.orientation = np.random.uniform(0, 2 * np.pi)

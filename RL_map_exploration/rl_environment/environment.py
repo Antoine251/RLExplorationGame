@@ -105,7 +105,7 @@ class Environment:
                     self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                     self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
                     if self.fish[i].is_collision(self.map[i].get_map()):
-                        reward[i] -= 0.1
+                        # reward[i] -= 0.01
                         self.fish[i].position[0] += np.cos(self.fish[i].orientation) * 3
                         self.fish[i].position[1] += np.sin(self.fish[i].orientation) * 3
                         if self.fish[i].is_collision(self.map[i].get_map()):
@@ -113,8 +113,8 @@ class Environment:
                             self.fish[i].position[1] -= 2 * np.sin(self.fish[i].orientation) * 3
                     # reward[i] = 0
                     # self.fish[i].done = True
-                else:
-                    reward[i] -= 0.01
+                # else:
+                #     reward[i] -= 0.001
 
             # update map and pseudo-3D rendering
             self.map[0].draw()
